@@ -1,9 +1,37 @@
 from flask import Flask, request, jsonify
 import result
 from models.schema.user import UserSchema
+import json
 
 app = Flask(__name__)
 user_schema = UserSchema()
+
+from flask import Flask, request
+import result
+
+app = Flask(__name__)
+
+@app.before_request
+def before_request():
+    result.write_log('info', "User requests info, path: {0}, method: {1}, ip: {2}, agent: {3}"
+                     .format(str(request.path), str(request.method), str(request.remote_addr), str(request.user_agent)))
+
+@app.after_request
+def after_request(response):
+    resp = response.get_json()
+
+    if resp is not None:
+        code, status, description = resp["code"], resp["status"], resp["description"]
+        response_info = "Server response info, code: {0}, status: {1}, description: {2}"
+
+        if code == 500:
+            result.write_log('warning', response_info.format(code, status, description))
+        else:
+            result.write_log('info', response_info.format(code, status, description))
+
+    return response
+
+# --------------------------------------------------------------------------------------
 
 @app.errorhandler(404)
 def method_404(e):
@@ -16,10 +44,10 @@ def method_405(e):
 
 # --------------------------------------------------------------------------------------
 
-
 @app.route('/', methods=["GET"])
 def hello_world():
-    return 'Restful api server v1.0.1'
+    test = result.result(200, "ping successful", "Welcome to restful api server.")
+    return str(test[1])
 
 
 @app.route('/rest/ping', methods=["GET"])
@@ -31,18 +59,16 @@ def ping():
 @app.route('/rest/post', methods=["POST"])
 def post():
     json_data = request.get_json()
-    data = [
-        {
-            'name': 123
-        }
-    ]
-    
+
     try:
         json_check = user_schema.load(json_data)
+        result_json = result.result(200, "ping successful")[0].get_json()
     except:
         return result.result(400, "please check your parameters")
-    data.append(json_check)
-    return jsonify(data)
+
+    result_json['data'] = json_check
+
+    return jsonify(result_json)
 
 if __name__ == '__main__':
     from common.ma import ma
