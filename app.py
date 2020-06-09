@@ -6,11 +6,6 @@ import json
 app = Flask(__name__)
 user_schema = UserSchema()
 
-from flask import Flask, request
-import result
-
-app = Flask(__name__)
-
 @app.before_request
 def before_request():
     result.write_log('info', "User requests info, path: {0}, method: {1}, ip: {2}, agent: {3}"
@@ -58,17 +53,24 @@ def ping():
 
 @app.route('/rest/post', methods=["POST"])
 def post():
+    # get post data
     json_data = request.get_json()
 
     try:
+        # input check by ma.Schema
         json_check = user_schema.load(json_data)
+        # get json of server response
         result_json = result.result(200, "ping successful")[0].get_json()
+        # logging post data
+        result.write_log('info', "data: {}".format(json_data))
     except:
         return result.result(400, "please check your parameters")
 
     result_json['data'] = json_check
 
     return jsonify(result_json)
+
+# --------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
     from common.ma import ma
