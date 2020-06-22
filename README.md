@@ -7,6 +7,8 @@ Flask - Build Restful API
 ```shell=
 pip install flask
 pip install flask-marshmallow
+pip install pillow
+pip install wget
 python app.py
 ```
 ## Reference

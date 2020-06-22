@@ -2,9 +2,17 @@ from flask import Flask, request, jsonify
 import result
 from models.schema.user import UserSchema
 import json
+from load_model import get_model_structure, get_test_model
+from image_recognition import find_image
+import wget
+import os
 
 app = Flask(__name__)
 user_schema = UserSchema()
+app.config["JSON_AS_ASCII"] = False
+
+model_structure = get_model_structure()
+test_model = get_test_model(model_structure)
 
 @app.before_request
 def before_request():
@@ -70,6 +78,27 @@ def post():
 
     return jsonify(result_json)
 
+@app.route('/rest/image', methods=["POST"])
+def image():
+    json_data = request.get_json()
+    
+    try:
+        image_url = json_data['image']
+        local_image_filename = wget.download(image_url)
+
+        find_image_dict = find_image(test_model, local_image_filename)
+        # get json of server response
+        result_json = result.result(200, "ping successful")[0].get_json()
+        # logging post data
+        result.write_log('info', "data: {}".format(find_image_dict))
+
+        if os.path.exists(local_image_filename):
+            os.remove(local_image_filename)
+    except:
+        return result.result(400, "please check your parameters")
+
+    result_json['data'] = find_image_dict
+    return jsonify(result_json)
 # --------------------------------------------------------------------------------------
 
 if __name__ == '__main__':

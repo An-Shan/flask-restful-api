@@ -1,3 +1,5 @@
 */__pycache__
 __pycache__
 *.log
+models_and_weights/0619_01_weights.h5
+models_and_weights/VGG16.h5
